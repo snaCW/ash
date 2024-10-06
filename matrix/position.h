@@ -2,6 +2,7 @@
 #define ASH_MATRIX_POSITION_H_INCLUDED
 
 #include <unordered_map>
+#include <stdexcept>
 
 namespace ash::matrix
 {
@@ -15,13 +16,31 @@ class ash::matrix::position
         int y;
     
     public:
-        position();
-        position(int x, int y);
+        position() {}
+        position(int x, int y)
+        {
+            if (x < 0 || y < 0)
+            {
+                throw std::invalid_argument("Position cannot be negative.");
+            }
+            
+            this->x = x;
+            this->y = y;
+        }
+
+        friend bool operator==(const position& left, const position& right)
+        {
+            return left.get_x() == right.get_x() && left.get_y() == right.get_y();
+        }
         
-        friend bool operator==(const position& left, const position& right);
-        
-        const int get_x() const;
-        const int get_y() const;
+        int get_x() const
+        {
+            return x;
+        }
+        int get_y() const
+        {
+            return y;
+        }
 };
 
 template <>
