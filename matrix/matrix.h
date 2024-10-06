@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <stdexcept>
-#include "sparse.h"
+#include "sparse_matrix.h"
 #include "position.h"
 
 namespace ash::matrix
