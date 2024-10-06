@@ -1,36 +1,39 @@
-# vector\<T\> Class
+# ASH Namespace
 
-This class should only be used for **learning purposes**. Please use `std::vector<T>` for your projects.
+Ash namespace contains different containers. Some of these containers are available at `std` namespace, so make sure use them in your projects.
 
-| Class | Header Guard |
-| - | - |
-| `std::vector<T>` | `_VECTOR_` |
-| `vector<T>` | `VECTOR_H` |
+## Hierarchy
 
-## How to use `std::vector<T>`
-
-At the top of your c++ file, add this line:
-
-``` Cpp
-#include <vector>
+```Directory
+namespace ash
+├── namespace matrix
+│   ├── class position
+│   ├── class matrix<T>
+│   └── class sparse_matrix<T>
+├── class vector<T>
+└── class linked_list<T>
 ```
 
-Now you can use the `std::vector<T>` with this pattern:
+## Usage
 
-``` Cpp
-std::vector<type> name;
+If we are at the main directory, to access each class, you must `#include` it first like below:
+
+- `#include "vector.h"`
+- `#include "matrix/matrix.h"`
+
+Later when compiling using terminal, make sure you use the proper address:
+
+```Bash
+g++ matrix/position.h main.cpp
 ```
 
-## How to use `vector<T>`
+## Need more information?
 
-Clone the repository. Since any files with `main.cpp` name is ignored by Git, you can freely add a `cpp` file to the project. Or rather, you can copy the `vector.h` file to your own project.
+You can easily click on each class name below and go to the dedicated markdown file.
 
-Include the header file:
-
-``` Cpp
-#include "vector.h"
-```
-
-> A lot of methods are identical between `std::vector<T>` and `vector<T>`, so make sure you don't include them at the same time.
-
-The rest is pretty similar to `std::vector<T>`.
+- matrix::
+  - matrix
+  - position
+  - sparse_matrix
+- linked_list
+- [vector](help/vector.md)
