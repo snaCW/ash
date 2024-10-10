@@ -10,3 +10,4 @@
 
 # Ignore any test main.cpp files.
 main.cpp
+main
