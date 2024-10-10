@@ -15,8 +15,8 @@ namespace ash::matrix
 template <class T>
 class ash::matrix::matrix
 {
-    private:
-        T** data = new T*[1];
+    protected:
+        T* data = new T[1];
         int rows;
         int columns;
     
@@ -37,14 +37,15 @@ class ash::matrix::matrix
         {
             this->rows = rows;
             this->columns = columns;
-            delete data;
-            T** data = new T*[rows];
+            delete[] data;
+            data = new T[rows * columns];
+
+            int index = 0;
             for (int i = 0; i < rows; i++)
             {
-                data[i] = new T[columns];
                 for (int j = 0; j < columns; j++)
                 {
-                    stream >> data[i][j];
+                    stream >> data[index++];
                 }
             }
         }
@@ -52,100 +53,71 @@ class ash::matrix::matrix
     // Destructor
         ~matrix()
         {
-            delete *data;
-            delete data;
+            delete[] data;
         }
 
     // Element Access
         T& at(int rowIndex, int columnIndex)
         {
-            if (rowIndex < 0 || rowIndex >= rows)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            if (columnIndex < 0 || columnIndex >= columns)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            return data[rowIndex][columnIndex];
+            throw_if_row_out_of_range(rowIndex);
+            throw_if_column_out_of_range(columnIndex);
+            return element_at(rowIndex, columnIndex);
         }
         const T& at(int rowIndex, int columnIndex) const
         {
-            if (rowIndex < 0 || rowIndex >= rows)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            if (columnIndex < 0 || columnIndex >= columns)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            return data[rowIndex][columnIndex];
+            throw_if_row_out_of_range(rowIndex);
+            throw_if_column_out_of_range(columnIndex);
+            return element_at(rowIndex, columnIndex);
         }
-        T* row_at(int index)
+        T* row_at(int rowIndex)
         {
-            if (index < 0 || index >= rows)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            return data[index];
-        }
-        const T* row_at(int index) const
-        {
-            if (index < 0 || index >= rows)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            return data[index];
-        }
-        T* column_at(int index)
-        {
-            if (index < 0 || index >= columns)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
+            throw_if_row_out_of_range(rowIndex);
 
-            T* columnData = new T[rows];
+            T* row = new T[columns];
+            for (int i = 0; i < columns; i++)
+            {
+                row[i] = &element_at(rowIndex, i);
+            }
+            return row;
+        }
+        const T* row_at(int rowIndex) const
+        {
+            throw_if_row_out_of_range(rowIndex);
+
+            T* row = new T[columns];
+            for (int i = 0; i < columns; i++)
+            {
+                row[i] = &element_at(rowIndex, i);
+            }
+            return row;
+        }
+        T* column_at(int columnIndex)
+        {
+            throw_if_column_out_of_range(columnIndex);
+
+            T* column = new T[rows];
             for (int i = 0; i < rows; i++)
             {
-                columnData[i] = data[i][index];
+                column[i] = &element_at(i, columnIndex);
             }
-            return columnData;
+            return column;
         }
-        const T* column_at(int index) const
+        const T* column_at(int columnIndex) const
         {
-            if (index < 0 || index >= columns)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
+            throw_if_column_out_of_range(columnIndex);
 
-            T* columnData = new T[rows];
+            T* column = new T[rows];
             for (int i = 0; i < rows; i++)
             {
-                columnData[i] = data[i][index];
+                column[i] = &element_at(i, columnIndex);
             }
-            return columnData;
+            return column;
         }
-        T* operator[](int index)
-        {
-            if (index < 0 || index >= rows)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            return data[index];
-        }
-        const T* operator[](int index) const
-        {
-            if (index < 0 || index >= rows)
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            return data[index];
-        }
-        T** get_data()
+        T* get_data()
         {
             return data;
         }
-        const T** get_data() const
+        const T* get_data() const
         {
             return data;
         }
@@ -163,8 +135,8 @@ class ash::matrix::matrix
     // Modifiers
         void clear()
         {
-            delete data;
-            data = new T*[1];
+            delete[] data;
+            data = new T[1];
             rows = 1;
             columns = 1;
         }
@@ -174,14 +146,11 @@ class ash::matrix::matrix
         {
             T defaultValue = T();
             int defaultValueCount = 0;
-            for (int i = 0; i < rows; i++)
+            for (int i = 0; i < rows * columns; i++)
             {
-                for (int j = 0; j < columns; j++)
+                if (data[i] == defaultValue)
                 {
-                    if (data[i][j] == defaultValue)
-                    {
-                        defaultValueCount++;
-                    }
+                    defaultValueCount++;
                 }
             }
 
@@ -201,12 +170,32 @@ class ash::matrix::matrix
             {
                 for (int j = 0; j < columns; j++)
                 {
-                    spMatrix.add(data[i][j], position(i, j));
+                    spMatrix.add(element_at(i, j), position(i, j));
                 }
             }
             return spMatrix;
         }
-        
+    
+    protected:
+    // Protected Methods
+        T& element_at(int rowIndex, int columnIndex)
+        {
+            return data[rowIndex * columns + columnIndex];
+        }
+        void throw_if_row_out_of_range(int rowIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= rows)
+            {
+                throw std::out_of_range("Row access is out of range.");
+            }
+        }
+        void throw_if_column_out_of_range(int columnIndex)
+        {
+            if (columnIndex < 0 || columnIndex >= columns)
+            {
+                throw std::out_of_range("Column access is out of range.");
+            }
+        }
 };
 
 #endif
