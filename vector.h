@@ -15,7 +15,7 @@ class ash::vector
     class iterator;
     class reverse_iterator;
     
-    private:
+    protected:
         T* array = new T[1];
         int length;
         int allocation_size;
@@ -469,7 +469,7 @@ class ash::vector
             other.length = tempLength;
         }
 
-    private:
+    protected:
         void resize()
         {
             T* array = new T[allocation_size * 2];
