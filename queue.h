@@ -47,6 +47,10 @@ public:
             container[i] = other.container[i];
         }
     }
+    ~queue()
+    {
+        delete[] container;
+    }
 
     // Element Access
     T &front()
