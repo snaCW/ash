@@ -4,152 +4,274 @@
 #include <string>
 #include <stdexcept>
 #include <functional>
+#include <math.h>
+#include <unordered_map>
 #include "stack.h"
+
+#define INFIX 0
+#define POSTFIX 1
+#define PREFIX 2
 
 namespace ash
 {
+    enum expressionType
+    {
+        infix,
+        prefix,
+        postfix
+    };
+
+    template <expressionType type>
     class expression;
 }
 
+template <ash::expressionType type>
 class ash::expression
 {
-    public:
-        enum type
-        {
-            infix, prefix, postfix
-        };
+private:
+    static const constexpr char operators[5]{'-', '+', '/', '*', '^'};
+    std::string text;
 
-    private:
-        static const constexpr char operators[5] {'-', '+', '/', '*', '^'};
-        std::string text;
-        type expressionType;
-    
-    public:
+public:
     // Constructors
-        expression()
-        {
-            text = "";
-            expressionType = infix;
-        }
-        expression(const std::string& text, type expressionType)
-        {
-            this->text = text;
-            this->expressionType = expressionType;
-        }
-    
+    expression()
+    {
+        text = "";
+    }
+    expression(const std::string &text)
+    {
+        this->text = text;
+    }
+    expression(const expression &other)
+    {
+        this->text = other.text;
+    }
+
     // Element Access
-        char operator[](int index) const
+    char operator[](int index) const
+    {
+        if (index >= text.size())
         {
-            if (index >= text.size())
-            {
-                throw std::out_of_range("Access out of range.");
-            }
-            return text[index];
+            throw std::out_of_range("Access out of range.");
         }
-        std::string to_string() const
-        {
-            return text;
-        }
-        type get_type() const
-        {
-            return expressionType;
-        }
-    
+        return text[index];
+    }
+    std::string to_string() const
+    {
+        return text;
+    }
+    expressionType get_type() const
+    {
+        return type;
+    }
+
     // Converters - To do
-        expression to_postfix() const
-        {
-            switch (expressionType)
-            {
-                case infix:
-                    return infix_to_postfix(*this);
-                
-                case prefix:
-                    return prefix_to_postfix(*this);
+    expression<postfix> to_postfix() const
+    {
+#if type == INFIX
+        return infix_to_postfix(*this);
+#endif
 
-                case postfix:
-                    return *this;
-            }
-            return *this;
-        }
-    
+#if type == PREFIX
+        return prefix_to_postfix(*this);
+#endif
+
+#if type == POSTFIX
+        return *this;
+#endif
+    }
+
     // Static Methods
-        static expression infix_to_postfix(const expression& infixExpression)
+    static bool validate(const expression<infix> &infixExp)
+    {
+        stack<char> temp;
+        for (char c : infixExp.text)
         {
-            if (infixExpression.expressionType != infix)
+            switch (c)
             {
-                std::invalid_argument("Expected infix expression as argument");
+            case '(':
+            case '{':
+            case '[':
+                temp.push(c);
+                break;
+
+            case ')':
+            case '}':
+            case ']':
+                if (temp.pop() != c)
+                    throw std::invalid_argument("Unexpected end of scope.");
+                break;
+
+            default:
+                break;
             }
-            std::string postfixText = "";
-            ash::stack<char> tempStack(infixExpression.text.size());
-
-            for (int i = 0; i < infixExpression.text.size(); i++)
-            {
-                if (infixExpression[i] == '(')
-                {
-                    tempStack.push('(');
-                    continue;
-                }
-                if (infixExpression[i] == ')')
-                {
-                    empty_stack_to_string(tempStack, postfixText, [](char top) { return true; });
-                    continue;
-                }
-
-                int p = priority(infixExpression[i]);
-                if (p == -1)
-                {
-                    postfixText += infixExpression[i];
-                }
-                else
-                {
-                    empty_stack_to_string(tempStack, postfixText, [p](char top){
-                        return priority(top) >= p;
-                    });
-                    tempStack.push(infixExpression[i]);
-                }
-            }
-
-            empty_stack_to_string(tempStack, postfixText, [](char top) { return true; });
-            return expression(postfixText, postfix);
         }
-        // To do
-        static expression prefix_to_postfix(const expression& prefixExpression)
+    }
+    static expression<postfix> infix_to_postfix(const expression<infix> &infixExpression)
+    {
+        std::string postfixText = "";
+        stack<char> tempStack(infixExpression.text.size());
+
+        for (int i = 0; i < infixExpression.text.size(); i++)
         {
-            if (prefixExpression.expressionType != prefix)
+            if (infixExpression[i] == '(')
             {
-                std::invalid_argument("Expected prefix expression as argument");
+                tempStack.push('(');
+                continue;
             }
-            return prefixExpression;
+            if (infixExpression[i] == ')')
+            {
+                empty_stack_to_string(tempStack, postfixText, [](char top)
+                                      { return top != '('; });
+                tempStack.pop(); // pop the remaining left parantheses
+                continue;
+            }
+
+            int p = priority(infixExpression[i]);
+            if (p == -1)
+            {
+                postfixText += infixExpression[i];
+            }
+            else
+            {
+                empty_stack_to_string(tempStack, postfixText, [p](char top)
+                                      { return priority(top) >= p; });
+                tempStack.push(infixExpression[i]);
+            }
         }
-    
-    private:
+
+        empty_stack_to_string(tempStack, postfixText, [](char top)
+                              { return true; });
+        return expression<postfix>(postfixText);
+    }
+    // To do
+    static expression<postfix> prefix_to_postfix(const expression<prefix> &prefixExpression)
+    {
+        return expression<postfix>(prefixExpression.text);
+    }
+
+private:
     // Private Static Methods
-        static int priority(char c)
+    static int priority(char c)
+    {
+        for (int i = 0; i < 5; i++)
         {
-            for (int i = 0; i < 5; i++)
+            if (c == operators[i])
             {
-                if (c == operators[i])
-                {
-                    return i / 2;
-                }
-            }
-            return -1;
-        }
-        static void empty_stack_to_string(stack<char>& stk, std::string& str, const std::function<bool (char top)>& func)
-        {
-            while (stk.size() != 0 && func(stk.top()))
-            {
-                char top = stk.pop();
-                if (top != '(' && top != ')')
-                {
-                    str += top;
-                }
+                return i / 2;
             }
         }
-        static bool is_letter(char c)
+        return -1;
+    }
+    static void empty_stack_to_string(stack<char> &stk, std::string &str, const std::function<bool(char top)> &func)
+    {
+        while (stk.size() != 0 && func(stk.top()))
         {
-            return (c - 'a' < 26 || c - 'A' < 26);
+            char top = stk.pop();
+            if (top != '(' && top != ')')
+            {
+                str += top;
+            }
         }
+    }
+    static bool is_letter(char c)
+    {
+        return (c - 'a' < 26 || c - 'A' < 26);
+    }
 };
+
+bool is_digit(char c)
+{
+    return (c - '0' < 10 && c - '0' >= 0);
+}
+float calculate(const ash::expression<ash::postfix> &expression, std::unordered_map<char, float> &variables)
+{
+    ash::stack<float> values(variables.size());
+    for (char c : expression.to_string())
+    {
+        if (variables.find(c) != variables.end())
+        {
+            values.push(variables[c]);
+            continue;
+        }
+
+        float y = values.pop();
+        float x = values.pop();
+        float result;
+        switch (c)
+        {
+        case '+':
+            result = x + y;
+            break;
+        case '-':
+            result = x - y;
+            break;
+
+        case '*':
+            result = x * y;
+            break;
+        case '/':
+            result = x / y;
+            break;
+
+        case '^':
+            result = std::pow(x, y);
+            break;
+        
+        default:
+            throw std::invalid_argument("Unexpected end of expression partition.");
+        }
+
+        values.push(result);
+    }
+
+    return values.top();
+}
+float calculate(const ash::expression<ash::infix> &expression)
+{
+    std::string text = expression.to_string();
+    std::unordered_map<char, float> variables;
+    char tempVariable = 0300U;
+
+    std::string number = "";
+    for (int i = 0; i < text.size(); i++)
+    {
+        char c = text[i];
+
+        if (is_digit(c) || c == '.')
+            number += c;
+        else if (number.size() != 0)
+        {
+            float n = std::stof(number);
+            variables[tempVariable] = n;
+
+            int startIndex = i - number.size();
+            text[startIndex] = tempVariable++;
+            text.erase(startIndex + 1, number.size() - 1);
+            i -= number.size();
+
+            number = "";
+        }
+    }
+
+    if (number.size() != 0)
+    {
+        float n = std::stof(number);
+        variables[tempVariable] = n;
+
+        int startIndex = text.size() - number.size();
+        text[startIndex] = tempVariable;
+        text.erase(startIndex + 1, number.size() - 1);
+    }
+
+    std::string postfixText = ash::expression<ash::infix>(text).to_postfix().to_string();
+    ash::expression<ash::postfix> postfixExp(postfixText);
+
+    return calculate(postfixExp, variables);
+}
+
+typedef ash::expression<ash::infix> infix_expression;
+typedef ash::expression<ash::postfix> postfix_expression;
+typedef ash::expression<ash::prefix> prefix_expression;
 
 #endif
