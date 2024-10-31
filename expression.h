@@ -25,6 +25,10 @@ namespace ash
     class expression;
 }
 
+typedef ash::expression<ash::infix> infix_expression;
+typedef ash::expression<ash::postfix> postfix_expression;
+typedef ash::expression<ash::prefix> prefix_expression;
+
 template <ash::expressionType type>
 class ash::expression
 {
@@ -180,15 +184,26 @@ private:
     }
 };
 
+static void make_null_in_range(std::string &str, char c, int start, int count)
+{
+    str[start] = c;
+    for (int i = 1; i < count; i++)
+    {
+        str[start + i] = '\0';
+    }
+}
 bool is_digit(char c)
 {
     return (c - '0' < 10 && c - '0' >= 0);
 }
-float calculate(const ash::expression<ash::postfix> &expression, std::unordered_map<char, float> &variables)
+float calculate(const postfix_expression &expression, std::unordered_map<char, float> &variables)
 {
     ash::stack<float> values(variables.size());
     for (char c : expression.to_string())
     {
+        if (c == '\0')
+            continue;
+
         if (variables.find(c) != variables.end())
         {
             values.push(variables[c]);
@@ -227,7 +242,7 @@ float calculate(const ash::expression<ash::postfix> &expression, std::unordered_
 
     return values.top();
 }
-float calculate(const ash::expression<ash::infix> &expression)
+float calculate(const infix_expression &expression)
 {
     std::string text = expression.to_string();
     std::unordered_map<char, float> variables;
@@ -242,12 +257,9 @@ float calculate(const ash::expression<ash::infix> &expression)
             number += c;
         else if (number.size() != 0)
         {
-            float n = std::stof(number);
-            variables[tempVariable] = n;
+            variables[tempVariable] = std::stof(number);
 
-            int startIndex = i - number.size();
-            text[startIndex] = tempVariable++;
-            text.erase(startIndex + 1, number.size() - 1);
+            make_null_in_range(text, tempVariable++, i - number.size(), number.size());
             i -= number.size();
 
             number = "";
@@ -256,22 +268,19 @@ float calculate(const ash::expression<ash::infix> &expression)
 
     if (number.size() != 0)
     {
-        float n = std::stof(number);
-        variables[tempVariable] = n;
+        variables[tempVariable] = std::stof(number);
 
-        int startIndex = text.size() - number.size();
-        text[startIndex] = tempVariable;
-        text.erase(startIndex + 1, number.size() - 1);
+        make_null_in_range(text, tempVariable, text.size() - number.size(), number.size());
     }
 
-    std::string postfixText = ash::expression<ash::infix>(text).to_postfix().to_string();
-    ash::expression<ash::postfix> postfixExp(postfixText);
+    std::string postfixText = infix_expression(text).to_postfix().to_string();
+    postfix_expression postfixExp(postfixText);
 
     return calculate(postfixExp, variables);
 }
 
-typedef ash::expression<ash::infix> infix_expression;
-typedef ash::expression<ash::postfix> postfix_expression;
-typedef ash::expression<ash::prefix> prefix_expression;
+// typedef ash::expression<ash::infix> infix_expression;
+// typedef ash::expression<ash::postfix> postfix_expression;
+// typedef ash::expression<ash::prefix> prefix_expression;
 
 #endif
