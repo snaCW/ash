@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <climits>
+#include <functional>
 
 namespace ash
 {
@@ -137,6 +138,16 @@ public:
         std::swap(head, other.head);
         std::swap(allocation_size, other.allocation_size);
         std::swap(length, other.length);
+    }
+
+
+    void iterate_on_all(const std::function<void (T &element)> &process)
+    {
+        for (int i = 0; i < length; i++)
+        {
+            int index = (head + i) % allocation_size;
+            process(container[index]);
+        }
     }
 };
 

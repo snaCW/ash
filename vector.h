@@ -39,7 +39,6 @@ public:
         this->allocation_size = allocation_size;
 
         array = new T[allocation_size];
-
         for (int i = 0; i < length; i++)
         {
             array[i] = initial_value;
@@ -47,7 +46,27 @@ public:
     }
     vector(const iterator &first, const iterator &last)
     {
+        length = last - first;
+        allocation_size = length;
 
+        array = new T[allocation_size];
+        iterator it = first;
+        int i = 0;
+        while (it != last)
+        {
+            array[i++] = ++it;
+        }
+    }
+    vector(const vector &other, size_t first, size_t last)
+    {
+        length = last - first;
+        allocation_size = length;
+
+        array = new T[allocation_size];
+        while (int i = 0; i < length; i++)
+        {
+            array[i] = other[i + first];
+        }
     }
     vector(const vector &other)
     {
