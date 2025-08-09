@@ -10,3 +10,6 @@
 
 # Ignore main.cpp files
 main.cpp
+
+# Ignore scripts
+*.sh
