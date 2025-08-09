@@ -89,7 +89,7 @@ constexpr bool ash::contains(InputIt first, InputIt last, const T& value) {
 }
 
 template <typename T, typename InputIt>
-_GLIBCXX14_CONSTEXPR void copy_value_to_iterator(const T& value, InputIt it) {
+_GLIBCXX14_CONSTEXPR void ash::copy_value_to_iterator(const T& value, InputIt it) {
     using elem_t = ash::remove_cvref_t<decltype(*it)>;
 
     // Since this is going to get a bit complicated, we will return early
@@ -112,7 +112,7 @@ _GLIBCXX14_CONSTEXPR void copy_value_to_iterator(const T& value, InputIt it) {
 }
 
 template <typename T, typename InputIt>
-_GLIBCXX14_CONSTEXPR void forward_value_to_iterator(T&& value, InputIt it) {
+_GLIBCXX14_CONSTEXPR void ash::forward_value_to_iterator(T&& value, InputIt it) {
     using elem_t = ash::remove_cvref_t<decltype(*it)>;
 
     // Since this is going to get a bit complicated, we will return early
