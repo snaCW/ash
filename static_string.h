@@ -302,7 +302,7 @@ public:
     /// @param count Count of copies
     /// @param ch The character
     /// @exception `std::out_of_range` if `count` is more than `N`.
-    _GLIBCXX14_CONSTEXPR basic_static_string(size_type count, CharT ch);
+    _GLIBCXX17_CONSTEXPR basic_static_string(size_type count, CharT ch);
 
     /// @brief Constructs a string with the contents of the range [`first`, `last`).
     /// @param first Starting iterator (including).
@@ -325,8 +325,8 @@ public:
     ash::basic_static_string<CharT, N>
 
 ASH_bss_template
-_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(size_type count, CharT ch) {
-    ash::throw_if_outside_of_capacity(count);
+_GLIBCXX17_CONSTEXPR ASH_bss_name::basic_static_string(size_type count, CharT ch) {
+    ash::throw_if_outside_of_capacity(N, count);
 
     __size = count;
     ash::fill_with_value(buffer.begin(), buffer.begin() + count, ch);
