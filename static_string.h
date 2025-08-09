@@ -245,14 +245,23 @@ class ash::basic_static_string {
 // Nested types
 
 protected:
+#if __cplusplus >= __cpp17
     /// @brief A Helper type to avoid boilder-plate.
     /// @tparam M Number of elements.
     template <std::size_t M>
     using array_t = std::array<CharT, M>;
+#else
+    /// @brief A Helper type to avoid boilder-plate.
+    /// @tparam M Number of elements.
+    template <std::size_t M>
+    using array_t = CharT[M];
+#endif
 
 public:
     /// @brief Type of the internal buffer.
     using buffer_type = array_t<N + 1>;
+
+#if __cplusplus >= __cpp17
 
     using value_type = typename buffer_type::value_type;
     using size_type = typename buffer_type::size_type;
@@ -269,6 +278,25 @@ public:
     using reverse_iterator = typename buffer_type::reverse_iterator;
     using const_reverse_iterator = typename buffer_type::const_reverse_iterator;
 
+#else // __cplusplus < __cpp17
+
+    using value_type = CharT;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+
+    using reference = value_type&;
+    using const_reference = const value_type&;
+
+    using pointer = value_type*;
+    using const_pointer = const value_type*;
+
+    using iterator = pointer;
+    using const_iterator = const_pointer;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<reverse_iterator>;
+
+#endif // __cplusplus >= __cpp17
+
 protected:
 #if __cplusplus >= __cpp17
     /// @brief A Helper type to avoid boilder-plate for `string_view`.
@@ -281,9 +309,14 @@ protected:
 // buffer in the constructors anyway, so it's better to not double fill the buffer.
 // However, only C++20 and later support this...
 
+// C++14 doesn't have `constexpr` iterators so we should just use a normal array.
+
 #if __cplusplus >= __cpp20
     /// @brief The underlying buffer.
     buffer_type buffer;
+#elif __cplusplus >= __cpp17
+    /// @brief The underlying buffer.
+    buffer_type buffer {};
 #else
     /// @brief The underlying buffer.
     buffer_type buffer {};
@@ -302,7 +335,7 @@ public:
     /// @param count Count of copies
     /// @param ch The character
     /// @exception `std::out_of_range` if `count` is more than `N`.
-    _GLIBCXX17_CONSTEXPR basic_static_string(size_type count, CharT ch);
+    _GLIBCXX14_CONSTEXPR basic_static_string(size_type count, CharT ch);
 
     /// @brief Constructs a string with the contents of the range [`first`, `last`).
     /// @param first Starting iterator (including).
@@ -325,11 +358,11 @@ public:
     ash::basic_static_string<CharT, N>
 
 ASH_bss_template
-_GLIBCXX17_CONSTEXPR ASH_bss_name::basic_static_string(size_type count, CharT ch) {
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(size_type count, CharT ch) {
     ash::throw_if_outside_of_capacity(N, count);
 
     __size = count;
-    ash::fill_with_value(buffer.begin(), buffer.begin() + count, ch);
+    ash::fill_with_value(std::begin(buffer), std::begin(buffer) + count, ch);
 
     // In C++20 and later we didn't initialze the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
@@ -342,10 +375,10 @@ template <class InputIt>
 _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(InputIt first, InputIt last) {
     difference_type len = last - first;
     ash::throw_if_difference_is_negetive(len);
-    ash::throw_if_outside_of_capacity(N, len);
+    ash::throw_if_outside_of_capacity(N, (size_type)len);
 
     __size = len;
-    ash::fill_from_iterator(buffer.begin(), first, len);
+    ash::fill_from_iterator(std::begin(buffer), first, len);
 
     // In C++20 and later we didn't initialze the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
