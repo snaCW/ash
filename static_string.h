@@ -114,6 +114,24 @@ constexpr char ash::to_upper(char c) noexcept {
     return ash::is_lower(c) ? (char)((int)c + 'A' - 'a') : c;
 }
 
+namespace ash {
+    template <typename CharT>
+    _GLIBCXX14_CONSTEXPR std::size_t strlen(CharT* str) noexcept {
+#if __cplusplus >= __cpp23
+        static
+#endif
+        constexpr CharT null = static_cast<CharT>('\0');
+
+        std::size_t len = 0;
+        while (*str != null) {
+            ++len;
+            ++str;
+        }
+        
+        return len;
+    }
+}
+
 // Declaration of `ash::basic_static_string`.
 
 namespace ash {
@@ -423,7 +441,7 @@ ASH_bss_template
 _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str) {
     ash::throw_if_nullptr(str);
 
-    std::size_t count = char_traits::length(str);
+    std::size_t count = ash::strlen(str);
     
     ash::throw_if_outside_of_capacity(N, count);
     ash::fill_from_iterator(std::begin(buffer), str, count);
