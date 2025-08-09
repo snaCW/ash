@@ -12,6 +12,12 @@ namespace ash {
 
     template <typename difference_type>
     _GLIBCXX14_CONSTEXPR void throw_if_difference_is_negetive(difference_type diff);
+
+    template <typename T>
+    /// @brief Throws `std::logic_error` if the argument is equal to `nullptr`.
+    /// @param pointer The pointer to check
+    /// @exception `std::logic_error`
+    _GLIBCXX14_CONSTEXPR void throw_if_nullptr(T* pointer);
 }
 
 template <typename size_type>
@@ -41,6 +47,12 @@ template <typename difference_type>
 _GLIBCXX14_CONSTEXPR void ash::throw_if_difference_is_negetive(difference_type diff) {
     if (diff < 0)
         throw std::logic_error("The 'first' iterator/pointer cannot reach 'last' (Negetive difference).");
+}
+
+template <typename T>
+_GLIBCXX14_CONSTEXPR void ash::throw_if_nullptr(T* pointer) {
+    if (pointer == nullptr)
+        throw std::logic_error("The pointer is null.");
 }
 
 #endif
