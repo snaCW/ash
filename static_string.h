@@ -30,6 +30,7 @@
 #define ASH_STATIC_STRING
 
 #include <array>
+#include <string>
 #include <string_view>
 #include <stdexcept>
 #include "algorithm.h"
@@ -297,6 +298,8 @@ public:
 
 #endif // __cplusplus >= __cpp17
 
+    using char_traits = std::char_traits<CharT>;
+
 protected:
 #if __cplusplus >= __cpp17
     /// @brief A Helper type to avoid boilder-plate for `string_view`.
@@ -348,6 +351,23 @@ public:
     template <class InputIt>
     _GLIBCXX14_CONSTEXPR basic_static_string(InputIt first, InputIt last);
 
+    // TODO
+    // template< container-compatible-range<CharT> R >
+    // constexpr basic_static_string(std::from_range_t, R&& rg);
+    
+    /// @brief Constructs a string with the contents of the range [`str`, `str + count`).
+    /// If [`str`, `str + count`) is not a valid range, the behavior is undefined.
+    /// @param str String pointer
+    /// @param count Elements count
+    /// @exception `std::logic_error` if the pointer is equal to nullptr.
+    ///
+    /// `std::out_of_range` if `count` is more than `N`.
+    _GLIBCXX14_CONSTEXPR basic_static_string(const CharT* str, size_type count);
+
+    /// @brief Equivalent to `basic_static_string(str, std::strlen(str))`
+    /// @param str String pointer
+    /// @exception 
+    _GLIBCXX14_CONSTEXPR basic_static_string(const CharT* str);
 };
 
 
@@ -383,6 +403,35 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(InputIt first, InputIt la
     // In C++20 and later we didn't initialze the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
     ash::fill_with_value(buffer.begin() + len, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str, size_type count) {
+    ash::throw_if_nullptr(str);
+    ash::throw_if_outside_of_capacity(N, count);
+    ash::fill_from_iterator(std::begin(buffer), str, count);
+    __size = count;
+
+    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str) {
+    ash::throw_if_nullptr(str);
+
+    std::size_t count = char_traits::length(str);
+    
+    ash::throw_if_outside_of_capacity(N, count);
+    ash::fill_from_iterator(std::begin(buffer), str, count);
+    __size = count;
+
+    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
 }
 
