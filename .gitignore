@@ -1,0 +1,12 @@
+# Ignore vscode folder and files
+.vscode
+
+# Ignore compiled files
+*.exe
+*.h.gch
+*.h.pch
+*.out
+*.o
+
+# Ignore main.cpp files
+main.cpp
