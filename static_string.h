@@ -1,0 +1,357 @@
+/*
+================================================================================
+  ash::basic_static_string - A fixed-size, full constexpr class for strings
+
+  License: MIT
+  Author: S. Navid Ashrafi
+  GitHub: snaCW
+
+  Description:
+    A header-only C++ library providing `ash::basic_static_string<T, N>` and
+    `ash::static_string<N>` where `T = char`. The string is stored
+    null-terminated in the underlying container.
+
+  Usage:
+    #include "static_string.h"
+
+  Macros:
+    Upon including this file in your project, the following macro(s) will be
+    globally exposed:
+      - ASH_STATIC_STRING
+      - ASH_copy_and
+
+================================================================================
+*/
+
+#ifndef ASH_STATIC_STRING
+
+/// @def ASH_STATIC_STRING
+/// @brief Include guard for `static_string.h` file.
+#define ASH_STATIC_STRING
+
+#include <array>
+#include <string_view>
+#include <stdexcept>
+#include "algorithm.h"
+#include "../ash/type_traits.h"
+#include "../ash/cplusplus_versions_compatibility_macros.h"
+#include "../ash/throw_if.h"
+
+// These are already included in the above libraries.
+// #include <cstddef>
+// #include <type_traits>
+// #include <utility>
+// #include <iostream>
+
+
+// Basic char utility
+namespace ash {
+    /// @brief Checks if the input refers to one of the English digits.
+    /// @param c Input
+    /// @return If the input is in `0...9` or not.
+    constexpr bool is_digit(char c) noexcept;
+
+    /// @brief Checks if the input is one of the English letters.
+    /// @param c Input
+    /// @return If the input is in `a...z || A...Z` or not.
+    constexpr bool is_letter(char c) noexcept;
+
+    /// @brief Checks if the input is one of the English lowercase letters.
+    /// @param c Input
+    /// @return If the input is in `a...z` or not.
+    constexpr bool is_lower(char c) noexcept;
+
+    /// @brief Checks if the input is one of the English uppercase letters.
+    /// @param c Input
+    /// @return If the input is in `A...Z` or not.
+    constexpr bool is_upper(char c) noexcept;
+
+    /// @brief Converts a character digit to the equivalent `int`.
+    /// @param c Input
+    /// @return If the input is in `'0'...'9'` returns `0...9`, otherwise returns `-1`.
+    constexpr int to_digit(char c) noexcept;
+
+    /// @brief Converts the input to the equivalent English lowercase letter.
+    /// @param c Input
+    /// @return If `is_upper(c)` returns `c + 'a' - 'A'`, otherwise returns `c`.
+    /// If the input is not an English letter, returns `c`.
+    constexpr char to_lower(char c) noexcept;
+
+    /// @brief Converts the input to the equivalent English uppercase letter.
+    /// @param c Input
+    /// @return If `is_lower(c)` returns `c + 'A' - 'a'`, otherwise returns `c`.
+    /// If the input is not an English letter, returns `c`.
+    constexpr char to_upper(char c) noexcept;
+
+} // Basic char utility
+
+constexpr bool ash::is_digit(char c) noexcept {
+    return (c >= '0' && c <= '9');
+}
+
+constexpr bool ash::is_letter(char c) noexcept {
+    return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
+}
+
+constexpr bool ash::is_lower(char c) noexcept {
+    return (c >= 'a' && c <= 'z');
+}
+
+constexpr bool ash::is_upper(char c) noexcept {
+    return (c >= 'A' && c <= 'Z');
+}
+
+constexpr int ash::to_digit(char c) noexcept {
+    return is_digit(c) ? c - '0' : -1;
+}
+
+constexpr char ash::to_lower(char c) noexcept {
+    return ash::is_upper(c) ? (char)((int)c + 'a' - 'A') : c;
+}
+
+constexpr char ash::to_upper(char c) noexcept {
+    return ash::is_lower(c) ? (char)((int)c + 'A' - 'a') : c;
+}
+
+// Declaration of `ash::basic_static_string`.
+
+namespace ash {
+    /// @struct basic_static_string
+    /// @brief A fully constexpr wrapper over `std::array<CharT, N + 1>` which
+    /// behaves as a compile time string. This is exactly like `std::basic_string<CharT>` but the capacity
+    /// is always known at compile time.
+    /// @tparam CharT Character-like type of each element.
+    /// @tparam N Capacity.
+    /// @note The buffer actually stores the string as null terminated (hence the `N + 1`).
+    /// However, This class completely acts as if there is no such thing.
+    /// (e.g. `back()` never returns `buffer[N]`.)
+    template <class CharT, std::size_t N>
+    class basic_static_string;
+
+    /// @struct static_string
+    /// @brief A fully constexpr wrapper over `std::array<char, N + 1>` which
+    /// behaves as a compile time string. This is exactly like `std::string` but the capacity
+    /// is always known at compile time.
+    /// @tparam N Capacity.
+    /// @note The buffer actually stores the string as null terminated (hence the `N + 1`).
+    /// However, This class completely acts as if there is no such thing.
+    /// (e.g. `back()` never returns `buffer[N]`.)
+    template <std::size_t N>
+    using static_string = basic_static_string<char, N>;
+
+    /// @struct static_wstring
+    /// @brief A fully constexpr wrapper over `std::array<wchar_t, N + 1>` which
+    /// behaves as a compile time string. This is exactly like `std::wstring` but the capacity
+    /// is always known at compile time.
+    /// @tparam N Capacity.
+    /// @note The buffer actually stores the string as null terminated (hence the `N + 1`).
+    /// However, This class completely acts as if there is no such thing.
+    /// (e.g. `back()` never returns `buffer[N]`.)
+    template <std::size_t N>
+    using static_wstring = basic_static_string<wchar_t, N>;
+
+#ifdef _GLIBCXX_USE_CHAR8_T
+    /// @struct static_u8string
+    /// @brief A fully constexpr wrapper over `std::array<char8_t, N + 1>` which
+    /// behaves as a compile time string. This is exactly like `std::u8string` but the capacity
+    /// is always known at compile time.
+    /// @tparam N Capacity.
+    /// @note The buffer actually stores the string as null terminated (hence the `N + 1`).
+    /// However, This class completely acts as if there is no such thing.
+    /// (e.g. `back()` never returns `buffer[N]`.)
+    template <std::size_t N>
+    using static_u8string = basic_static_string<char8_t, N>;
+#endif // _GLIBCXX_USE_CHAR8_T
+
+    /// @struct static_u16string
+    /// @brief A fully constexpr wrapper over `std::array<char16_t, N + 1>` which
+    /// behaves as a compile time string. This is exactly like `std::u16string` but the capacity
+    /// is always known at compile time.
+    /// @tparam N Capacity.
+    /// @note The buffer actually stores the string as null terminated (hence the `N + 1`).
+    /// However, This class completely acts as if there is no such thing.
+    /// (e.g. `back()` never returns `buffer[N]`.)
+    template <std::size_t N>
+    using static_u16string = basic_static_string<char16_t, N>;
+
+    /// @struct static_u32string
+    /// @brief A fully constexpr wrapper over `std::array<char32_t, N + 1>` which
+    /// behaves as a compile time string. This is exactly like `std::u32string` but the capacity
+    /// is always known at compile time.
+    /// @tparam N Capacity.
+    /// @note The buffer actually stores the string as null terminated (hence the `N + 1`).
+    /// However, This class completely acts as if there is no such thing.
+    /// (e.g. `back()` never returns `buffer[N]`.)
+    template <std::size_t N>
+    using static_u32string = basic_static_string<char32_t, N>;
+
+} // Declaration of `ash::basic_static_string`.
+
+
+
+// Neccessary type traits for `ash::basic_static_string`.
+
+namespace ash {
+    /// @brief False Type (SFINAE): `T` is not the same as `ash::basic_static_string<CharT, N>`.
+    /// @tparam T type
+    /// @note This is a struct. Use `::value` to access the result. `value` is always `false`.
+    template <typename T>
+    struct is_basic_static_string : std::false_type {};
+
+    /// @brief True Type (SFINAE): `T` is the same as `ash::basic_static_string<CharT, N>`.
+    /// @tparam T type
+    /// @note This is a struct. Use `::value` to access the result. `value` is always `true`.
+    template <typename CharT, std::size_t N>
+    struct is_basic_static_string<basic_static_string<CharT, N>> : std::true_type {};
+
+
+    template <typename T>
+    struct is_array_of_basic_static_strings_impl : std::false_type {};
+
+    template <typename U, std::size_t N>
+    struct is_array_of_basic_static_strings_impl<std::array<U, N>>
+        : is_basic_static_string<ash::remove_cvref_t<U>> {};
+
+    /// @brief False/True Type (SFINAE): Is `T` the same as `std::array<U, arr_N>`
+    /// where `U` is `ash::static_basic_string<CharT, str_N>`?
+    /// @tparam T type
+    /// This is a struct, Use `::value` to access the result.
+    template <typename T>
+    struct is_array_of_basic_static_strings
+        : is_array_of_basic_static_strings_impl<ash::remove_cvref_t<T>> {};
+
+
+
+    /// @brief Enable if the template argument has the same type as an `std::array` of `ash::static_basic_string`s.
+    /// @tparam T type
+    /// @tparam Eval If enabled, evaluates to this type. Default: `int`
+    template <typename T, typename Eval = int>
+    using enable_if_is_array_of_basic_static_strings_t = ash::enable_if_t<is_array_of_basic_static_strings<T>::value, Eval>;
+
+    /// @brief Enable if the template argument has the same type as an `ash::static_basic_string`.
+    /// @tparam T type
+    /// @tparam Eval If enabled, evaluates to this type. Default: `int`
+    template <typename T, typename Eval = int>
+    using enable_if_is_basic_static_string_t = ash::enable_if_t<is_basic_static_string<T>::value, Eval>;
+
+} // Neccessary type traits for `ash::basic_static_string`.
+
+
+template <class CharT, std::size_t N>
+class ash::basic_static_string {
+    template <typename, std::size_t>
+    friend class basic_static_string; // Friends all the other `basic_static_string`s with other template params.
+
+// Nested types
+
+protected:
+    /// @brief A Helper type to avoid boilder-plate.
+    /// @tparam M Number of elements.
+    template <std::size_t M>
+    using array_t = std::array<CharT, M>;
+
+public:
+    /// @brief Type of the internal buffer.
+    using buffer_type = array_t<N + 1>;
+
+    using value_type = typename buffer_type::value_type;
+    using size_type = typename buffer_type::size_type;
+    using difference_type = typename buffer_type::difference_type;
+
+    using reference = value_type&;
+    using const_reference = const value_type&;
+
+    using pointer = value_type*;
+    using const_pointer = const value_type*;
+
+    using iterator = typename buffer_type::iterator;
+    using const_iterator = typename buffer_type::const_iterator;
+    using reverse_iterator = typename buffer_type::reverse_iterator;
+    using const_reverse_iterator = typename buffer_type::const_reverse_iterator;
+
+protected:
+#if __cplusplus >= __cpp17
+    /// @brief A Helper type to avoid boilder-plate for `string_view`.
+    using sv_type = std::basic_string_view<value_type>;
+#endif
+
+// Actual data
+
+// Not initializing the buffer here is preferable. It's because we're going to fill the
+// buffer in the constructors anyway, so it's better to not double fill the buffer.
+// However, only C++20 and later support this...
+
+#if __cplusplus >= __cpp20
+    /// @brief The underlying buffer.
+    buffer_type buffer;
+#else
+    /// @brief The underlying buffer.
+    buffer_type buffer {};
+#endif
+
+    /// @brief Size of the string.
+    size_type __size = 0;
+
+public:
+
+// Constructors
+
+    _GLIBCXX14_CONSTEXPR basic_static_string() noexcept = default;
+
+    /// @brief Constructs a string with `count` copies of character `ch`.
+    /// @param count Count of copies
+    /// @param ch The character
+    /// @exception `std::out_of_range` if `count` is more than `N`.
+    _GLIBCXX14_CONSTEXPR basic_static_string(size_type count, CharT ch);
+
+    /// @brief Constructs a string with the contents of the range [`first`, `last`).
+    /// @param first Starting iterator (including).
+    /// @param last Ending iterator (excluding).
+    /// @exception `std::logic_error` if `last` is before `first`. It's good to note
+    /// using `rbegin()` and `rend()` won't cause trouble if you pass them in the
+    /// same order.
+    ///
+    /// `std::out_of_range` if the iterator difference is more than `N`.
+    template <class InputIt>
+    _GLIBCXX14_CONSTEXPR basic_static_string(InputIt first, InputIt last);
+
+};
+
+
+#define ASH_bss_template \
+    template <class CharT, std::size_t N>
+
+#define ASH_bss_name \
+    ash::basic_static_string<CharT, N>
+
+ASH_bss_template
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(size_type count, CharT ch) {
+    ash::throw_if_outside_of_capacity(count);
+
+    __size = count;
+    ash::fill_with_value(buffer.begin(), buffer.begin() + count, ch);
+
+    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <class InputIt>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(InputIt first, InputIt last) {
+    difference_type len = last - first;
+    ash::throw_if_difference_is_negetive(len);
+    ash::throw_if_outside_of_capacity(N, len);
+
+    __size = len;
+    ash::fill_from_iterator(buffer.begin(), first, len);
+
+    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + len, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+
+#endif // ASH_STATIC_STRING
