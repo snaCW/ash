@@ -384,7 +384,7 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(size_type count, CharT ch
     __size = count;
     ash::fill_with_value(std::begin(buffer), std::begin(buffer) + count, ch);
 
-    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
     ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
@@ -400,7 +400,7 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(InputIt first, InputIt la
     __size = len;
     ash::fill_from_iterator(std::begin(buffer), first, len);
 
-    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
     ash::fill_with_value(buffer.begin() + len, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
@@ -413,7 +413,7 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str, size_ty
     ash::fill_from_iterator(std::begin(buffer), str, count);
     __size = count;
 
-    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
     ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
@@ -429,7 +429,7 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str) {
     ash::fill_from_iterator(std::begin(buffer), str, count);
     __size = count;
 
-    // In C++20 and later we didn't initialze the buffer, so we should fill it here.
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
     ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
