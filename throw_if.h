@@ -12,7 +12,7 @@ namespace ash {
     _GLIBCXX14_CONSTEXPR void throw_if_outside_of_capacity(size_type N, size_type n);
 
     template <typename size_type>
-    /// @brief Throws `std::out_of_range` if `pos` is more than `size()`.
+    /// @brief Throws `std::out_of_range` if `pos` is equal or more than `size()`.
     /// @param size Size
     /// @param pos Index to access.
     /// @exception `std::out_of_range`
@@ -39,7 +39,7 @@ _GLIBCXX14_CONSTEXPR void ash::throw_if_outside_of_capacity(size_type N, size_ty
 
 template <typename size_type>
 _GLIBCXX14_CONSTEXPR void ash::throw_if_outside_of_size(size_type size, size_type pos) {
-    if (pos > size)
+    if (pos >= size)
         throw std::out_of_range("Access to the out of the size.");
 }
 
