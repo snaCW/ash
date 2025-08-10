@@ -384,8 +384,44 @@ public:
 
     /// @brief Equivalent to `basic_static_string(str, std::strlen(str))`
     /// @param str String pointer
-    /// @exception 
+    /// @exception `std::logic_error` if the argument is equal to nullptr.
+    ///
+    /// `std::out_of_range` if `strlen(str)` is more than `N`.
     _GLIBCXX14_CONSTEXPR basic_static_string(const CharT* str);
+
+    /// @brief `ash::basic_static_string` cannot be constructed from nullptr.
+    /// @note Deleted function. 
+    _GLIBCXX14_CONSTEXPR basic_static_string(std::nullptr_t) = delete;
+
+    /// @brief Tries to assume that `StringViewLike` type can be a `std::string_view` and then
+    /// construct a string from it.
+    /// @tparam StringViewLike Type of the argument.
+    /// @param str Any object that has `::value_type` and `being()` and `end()` iterators.
+    /// @exception `static_assert` error if `SringViewLike` satisfies `std::is_pointer_v`.
+    ///
+    /// `static_assert` error if `StringViewLike::value_type` is not implicitly convertible to
+    /// `CharT`.
+    ///
+    /// `std::out_of_range` if `str.end() - str.begin()` is more than `N`.
+    template <class StringViewLike>
+    explicit _GLIBCXX14_CONSTEXPR basic_static_string(const StringViewLike& str);
+
+    /// @brief Tries to assume that `StringViewLike` type can be a `std::string_view` and then
+    /// construct a string from it.
+    /// @tparam StringViewLike Type of the argument.
+    /// @param str Any object that has `::value_type` and `being()` and `end()` iterators.
+    /// @param pos Starting index
+    /// @param count The number of elements to copy.
+    /// @exception `static_assert` error if `SringViewLike` satisfies `std::is_pointer_v`.
+    ///
+    /// `static_assert` error if `StringViewLike::value_type` is not implicitly convertible to
+    /// `CharT`.
+    ///
+    /// `std::out_of_range` if `count` is more than `N`.
+    ///
+    /// `std::out_of_range` if `pos + count - 1` is out of range according to `len = str.end() - str.begin()`.
+    template <class StringViewLike>
+    _GLIBCXX14_CONSTEXPR basic_static_string(const StringViewLike& str, size_type pos, size_type count);
 };
 
 
@@ -453,5 +489,45 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str) {
 #endif // >= C++20
 }
 
+ASH_bss_template
+template <class StringViewLike>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str) {
+    static_assert(!std::is_pointer<StringViewLike>::value, "Argument cannot be a pointer.");
+
+    using elem_t = typename ash::remove_cvref_t<StringViewLike>::value_type;
+    static_assert(std::is_convertible<elem_t, CharT>::value, "Cannot implicitly convert the argument to a view.");
+
+    size_type len = str.end() - str.begin();
+    ash::throw_if_outside_of_capacity(N, len);
+
+    ash::fill_from_iterator(std::begin(buffer), str.begin(), len);
+    __size = len;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + len, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <class StringViewLike>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str, size_type pos, size_type count) {
+    static_assert(!std::is_pointer<StringViewLike>::value, "Argument cannot be a pointer.");
+
+    using elem_t = typename ash::remove_cvref_t<StringViewLike>::value_type;
+    static_assert(std::is_convertible<elem_t, CharT>::value, "Cannot implicitly convert the argument to a view.");
+
+    size_type len = str.end() - str.begin();
+    ash::throw_if_outside_of_capacity(N, count);
+    ash::throw_if_outside_of_size(len, pos + count - 1);
+
+    ash::fill_from_iterator(std::begin(buffer), str.begin() + pos, count);
+    __size = count;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
 
 #endif // ASH_STATIC_STRING
