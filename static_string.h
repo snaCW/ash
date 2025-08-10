@@ -117,10 +117,7 @@ constexpr char ash::to_upper(char c) noexcept {
 namespace ash {
     template <typename CharT>
     _GLIBCXX14_CONSTEXPR std::size_t strlen(CharT* str) noexcept {
-#if __cplusplus >= __cpp23
-        static
-#endif
-        constexpr CharT null = static_cast<CharT>('\0');
+    constexpr CharT null = static_cast<CharT>('\0');
 
         std::size_t len = 0;
         while (*str != null) {
@@ -318,6 +315,9 @@ public:
 
     using char_traits = std::char_traits<CharT>;
 
+    template <size_type M>
+    using c_array_t = CharT[M];
+
 protected:
 #if __cplusplus >= __cpp17
     /// @brief A Helper type to avoid boilder-plate for `string_view`.
@@ -387,7 +387,14 @@ public:
     /// @exception `std::logic_error` if the argument is equal to nullptr.
     ///
     /// `std::out_of_range` if `strlen(str)` is more than `N`.
-    _GLIBCXX14_CONSTEXPR basic_static_string(const CharT* str);
+    template <
+        typename pointer_type,
+        typename = ash::enable_if_t<
+            std::is_pointer<pointer_type>::value &&
+            !std::is_array<pointer_type>::value
+        >
+    >
+    _GLIBCXX14_CONSTEXPR basic_static_string(const pointer_type str);
 
     /// @brief `ash::basic_static_string` cannot be constructed from nullptr.
     /// @note Deleted function. 
@@ -397,13 +404,18 @@ public:
     /// construct a string from it.
     /// @tparam StringViewLike Type of the argument.
     /// @param str Any object that has `::value_type` and `being()` and `end()` iterators.
-    /// @exception `static_assert` error if `SringViewLike` satisfies `std::is_pointer_v`.
-    ///
-    /// `static_assert` error if `StringViewLike::value_type` is not implicitly convertible to
-    /// `CharT`.
+    /// @exception `static_assert` error if `StringViewLike::value_type` is not implicitly
+    /// convertible to `CharT`.
     ///
     /// `std::out_of_range` if `str.end() - str.begin()` is more than `N`.
-    template <class StringViewLike>
+    /// @note This constructor won't participate in overload resolution if `StringViewLike`
+    /// is a pointer type.
+    template <
+        class StringViewLike,
+        typename = ash::enable_if_t<
+            !std::is_pointer<StringViewLike>::value
+        >
+    >
     explicit _GLIBCXX14_CONSTEXPR basic_static_string(const StringViewLike& str);
 
     /// @brief Tries to assume that `StringViewLike` type can be a `std::string_view` and then
@@ -412,16 +424,20 @@ public:
     /// @param str Any object that has `::value_type` and `being()` and `end()` iterators.
     /// @param pos Starting index
     /// @param count The number of elements to copy.
-    /// @exception `static_assert` error if `SringViewLike` satisfies `std::is_pointer_v`.
-    ///
-    /// `static_assert` error if `StringViewLike::value_type` is not implicitly convertible to
-    /// `CharT`.
+    /// @exception `static_assert` error if `StringViewLike::value_type` is not implicitly
+    /// convertible to `CharT`.
     ///
     /// `std::out_of_range` if `count` is more than `N`.
     ///
     /// `std::out_of_range` if `pos + count - 1` is out of range according to `len = str.end() - str.begin()`.
     template <class StringViewLike>
     _GLIBCXX14_CONSTEXPR basic_static_string(const StringViewLike& str, size_type pos, size_type count);
+
+    /// @brief Constructs a string from a literal string.
+    /// @param str The literal string
+    /// @exception `std::out_of_range` if `str` size is more than `N`.
+    template <std::size_t array_N>
+    _GLIBCXX14_CONSTEXPR basic_static_string(const CharT (&str)[array_N]);
 };
 
 
@@ -474,7 +490,11 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str, size_ty
 }
 
 ASH_bss_template
-_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str) {
+template <
+    typename pointer_type,
+    typename
+>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const pointer_type str) {
     ash::throw_if_nullptr(str);
 
     std::size_t count = ash::strlen(str);
@@ -490,11 +510,14 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT* str) {
 }
 
 ASH_bss_template
-template <class StringViewLike>
+template <
+    class StringViewLike,
+    typename
+>
 _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str) {
-    static_assert(!std::is_pointer<StringViewLike>::value, "Argument cannot be a pointer.");
-
+    constexpr bool is_array = std::is_array<StringViewLike>::value;
     using elem_t = typename ash::remove_cvref_t<StringViewLike>::value_type;
+
     static_assert(std::is_convertible<elem_t, CharT>::value, "Cannot implicitly convert the argument to a view.");
 
     size_type len = str.end() - str.begin();
@@ -512,8 +535,6 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str
 ASH_bss_template
 template <class StringViewLike>
 _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str, size_type pos, size_type count) {
-    static_assert(!std::is_pointer<StringViewLike>::value, "Argument cannot be a pointer.");
-
     using elem_t = typename ash::remove_cvref_t<StringViewLike>::value_type;
     static_assert(std::is_convertible<elem_t, CharT>::value, "Cannot implicitly convert the argument to a view.");
 
@@ -527,6 +548,21 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str
     // In C++20 and later we didn't initialize the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
     ash::fill_with_value(buffer.begin() + count, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <std::size_t array_N>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT (&str)[array_N]) {
+    ash::throw_if_outside_of_capacity(N, array_N);
+
+    ash::fill_from_iterator(std::begin(buffer), std::begin(str), array_N);
+
+    __size = array_N;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + array_N, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
 }
 
