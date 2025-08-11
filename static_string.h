@@ -635,15 +635,16 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str
 ASH_bss_template
 template <std::size_t array_N>
 _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT (&str)[array_N]) {
-    ash::throw_if_outside_of_capacity(N, array_N);
+    size_type len = array_N - 1;
+    ash::throw_if_outside_of_capacity(N, len);
 
-    ash::fill_from_iterator(std::begin(buffer), std::begin(str), array_N);
+    ash::fill_from_iterator(std::begin(buffer), std::begin(str), len);
 
-    __size = array_N;
+    __size = len;
 
     // In C++20 and later we didn't initialize the buffer, so we should fill it here.
 #if __cplusplus >= __cpp20
-    ash::fill_with_value(buffer.begin() + array_N, buffer.end(), __default_value__(CharT));
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
 }
 
