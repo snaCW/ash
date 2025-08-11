@@ -318,6 +318,9 @@ public:
     template <size_type M>
     using c_array_t = CharT[M];
 
+    template <size_type M>
+    using other_t = basic_static_string<CharT, M>;
+
 protected:
 #if __cplusplus >= __cpp17
     /// @brief A Helper type to avoid boilder-plate for `string_view`.
@@ -438,6 +441,80 @@ public:
     /// @exception `std::out_of_range` if `str` size is more than `N`.
     template <std::size_t array_N>
     _GLIBCXX14_CONSTEXPR basic_static_string(const CharT (&str)[array_N]);
+
+    /// @brief [Copy-] Constructs a string with the contents of other.
+    /// @param other Other `basic_static_string` object.
+    /// @exception `std::out_of_range` if `other.size()` is more than `N`.
+    /// @note `other.capacity()` can be more or less then `N`, it doesn't matter. Only `other.size()`
+    /// should fit into `N`.
+    template <std::size_t other_N>
+    _GLIBCXX14_CONSTEXPR basic_static_string(const other_t<other_N>& other);
+
+    /// @brief [Move-] Constructs a string with the contents of other.
+    /// @param other Other `basic_static_string` object.
+    /// @exception `std::out_of_range` if `other.size()` is more than `N`.
+    /// @note When the move finishes, `other` is in a valid state (`other.size() == 0`).
+    ///
+    /// `other.capacity()` can be more or less then `N`, it doesn't matter. Only `other.size()`
+    /// should fit into `N`.
+    template <std::size_t other_N>
+    _GLIBCXX14_CONSTEXPR basic_static_string(other_t<other_N>&& other);
+
+    /// @brief [Copy-] Constructs a string with the contents of other.
+    /// @param other Other `basic_static_string` object.
+    /// @exception `std::out_of_range` if `other.size()` is more than `N`.
+    _GLIBCXX14_CONSTEXPR basic_static_string(const other_t<N>& other);
+
+    /// @brief [Move-] Constructs a string with the contents of other.
+    /// @param other Other `basic_static_string` object.
+    /// @exception `std::out_of_range` if `other.size()` is more than `N`.
+    /// @note When the move finishes, `other` is in a valid state (`other.size() == 0`).
+    /// @note The complexity is *linear* in the size of the string.
+    _GLIBCXX14_CONSTEXPR basic_static_string(other_t<N>&& other);
+
+    /// @brief [Copy-] Constructs a string with the contents of the range [`other.begin() + pos`, `other.end()`).
+    /// @param other Other `basic_static_string` object.
+    /// @param pos Starting index.
+    /// @exception `std::out_of_range` if `pos` is equal or more than `other.size()`.
+    ///
+    /// `std::out_of_range` if `other.size() - pos` is more than `N`.
+    template <std::size_t other_N>
+    _GLIBCXX14_CONSTEXPR basic_static_string(const other_t<other_N>& other, size_type pos);
+
+    /// @brief [Move-] Constructs a string with the contents of the range [`other.begin() + pos`, `other.end()`).
+    /// @param other Other `basic_static_string` object.
+    /// @param pos Starting index.
+    /// @exception `std::out_of_range` if `pos` is equal or more than `other.size()`.
+    ///
+    /// `std::out_of_range` if `other.size() - pos` is more than `N`.
+    /// @note When the move finishes, `other` is in a valid state (`other.size() == 0`).
+    /// @note The complexity is *linear* in the size of the string.
+    template <std::size_t other_N>
+    _GLIBCXX14_CONSTEXPR basic_static_string(other_t<other_N>&& other, size_type pos);
+
+    /// @brief [Copy-] Constructs a string with the contents of the range 
+    /// [`other.begin() + pos`, `other.begin() + pos + count`).
+    /// @param other Other `basic_static_string` object.
+    /// @param pos Starting index.
+    /// @param count The number of elements to copy.
+    /// @exception `std::out_of_range` if `pos + count - 1` is equal or more than `other.size()`.
+    ///
+    /// `std::out_of_range` if `count` is more than `N`.
+    template <std::size_t other_N>
+    _GLIBCXX14_CONSTEXPR basic_static_string(const other_t<other_N>& other, size_type pos, size_type count);
+
+    /// @brief [Move-] Constructs a string with the contents of the range 
+    /// [`other.begin() + pos`, `other.begin() + pos + count`).
+    /// @param other Other `basic_static_string` object.
+    /// @param pos Starting index.
+    /// @param count The number of elements to move.
+    /// @exception `std::out_of_range` if `pos` is equal or more than `other.size()`.
+    ///
+    /// `std::out_of_range` if `count` is more than `N`.
+    /// @note When the move finishes, `other` is in a valid state (`other.size() == 0`).
+    /// @note The complexity is *linear* in the size of the string.
+    template <std::size_t other_N>
+    _GLIBCXX14_CONSTEXPR basic_static_string(other_t<other_N>&& other, size_type pos, size_type count);
 };
 
 
@@ -569,5 +646,151 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const CharT (&str)[array_
     ash::fill_with_value(buffer.begin() + array_N, buffer.end(), __default_value__(CharT));
 #endif // >= C++20
 }
+
+ASH_bss_template
+template <std::size_t other_N>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const other_t<other_N>& other) {
+    ash::throw_if_outside_of_capacity(N, other.__size);
+
+    ash::fill_from_iterator(std::begin(buffer), std::begin(other.buffer), other.__size);
+    __size = other.__size;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <std::size_t other_N>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(other_t<other_N>&& other) {
+    ash::throw_if_outside_of_capacity(N, other.__size);
+
+    auto it = std::begin(buffer);
+    for (size_type i = 0; i < other.__size; ++i) {
+        ash::forward_value_to_iterator(std::move(other.buffer[i]), it);
+        ++it;
+    }
+
+    __size = other.__size;
+    other.__size = 0;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const other_t<N>& other) {
+    ash::throw_if_outside_of_capacity(N, other.__size);
+
+    ash::fill_from_iterator(std::begin(buffer), std::begin(other.buffer), other.__size);
+    __size = other.__size;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(other_t<N>&& other) {
+    ash::throw_if_outside_of_capacity(N, other.__size);
+
+    auto it = std::begin(buffer);
+    for (size_type i = 0; i < other.__size; ++i) {
+        ash::forward_value_to_iterator(std::move(other.buffer[i]), it);
+        ++it;
+    }
+
+    __size = other.__size;
+    other.__size = 0;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <std::size_t other_N>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const other_t<other_N>& other, size_type pos) {
+    ash::throw_if_outside_of_size(other.__size, pos);
+
+    size_type len = other.__size - pos;
+    ash::throw_if_outside_of_capacity(N, len);
+
+    ash::fill_from_iterator(std::begin(buffer), std::begin(other.buffer) + pos, len);
+    __size = len;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <std::size_t other_N>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(other_t<other_N>&& other, size_type pos) {
+    ash::throw_if_outside_of_size(other.__size, pos);
+
+    size_type len = other.__size - pos;
+    ash::throw_if_outside_of_capacity(N, len);
+
+    auto it = std::begin(buffer);
+    for (size_type i = 0; i < other.__size; ++i) {
+        ash::forward_value_to_iterator(std::move(other.buffer[i + pos]), it);
+        ++it;
+    }
+
+    __size = len;
+    other.__size = 0;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <std::size_t other_N>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const other_t<other_N>& other, size_type pos, size_type count) {
+    ash::throw_if_outside_of_size(other.__size, pos + count - 1);
+
+    ash::throw_if_outside_of_capacity(N, count);
+
+    ash::fill_from_iterator(std::begin(buffer), std::begin(other.buffer) + pos, count);
+    __size = count;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+ASH_bss_template
+template <std::size_t other_N>
+_GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(other_t<other_N>&& other, size_type pos, size_type count) {
+    ash::throw_if_outside_of_size(other.__size, pos + count - 1);
+
+    ash::throw_if_outside_of_capacity(N, count);
+
+    auto it = std::begin(buffer);
+    for (size_type i = 0; i < count; ++i) {
+        ash::forward_value_to_iterator(std::move(other.buffer[i + pos]), it);
+        ++it;
+    }
+
+    __size = count;
+    other.__size = 0;
+
+    // In C++20 and later we didn't initialize the buffer, so we should fill it here.
+#if __cplusplus >= __cpp20
+    ash::fill_with_value(buffer.begin() + __size, buffer.end(), __default_value__(CharT));
+#endif // >= C++20
+}
+
+
 
 #endif // ASH_STATIC_STRING
