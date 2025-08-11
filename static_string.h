@@ -515,6 +515,8 @@ template <
     typename
 >
 _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str) {
+    static_assert(ash::is_string_view_like<StringViewLike>::value, "The type has no `begin()` or `end()` iterators or `::value_type` dependant typename.");
+
     constexpr bool is_array = std::is_array<StringViewLike>::value;
     using elem_t = typename ash::remove_cvref_t<StringViewLike>::value_type;
 
@@ -535,6 +537,8 @@ _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str
 ASH_bss_template
 template <class StringViewLike>
 _GLIBCXX14_CONSTEXPR ASH_bss_name::basic_static_string(const StringViewLike& str, size_type pos, size_type count) {
+    static_assert(ash::is_string_view_like<StringViewLike>::value, "The type has no `begin()` or `end()` iterators or `::value_type` dependant typename.");
+
     using elem_t = typename ash::remove_cvref_t<StringViewLike>::value_type;
     static_assert(std::is_convertible<elem_t, CharT>::value, "Cannot implicitly convert the argument to a view.");
 
