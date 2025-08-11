@@ -367,8 +367,7 @@ public:
     /// @exception `std::logic_error` if `last` is before `first`. It's good to note
     /// using `rbegin()` and `rend()` won't cause trouble if you pass them in the
     /// same order.
-    ///
-    /// `std::out_of_range` if the iterator difference is more than `N`.
+    /// @exception `std::out_of_range` if the iterator difference is more than `N`.
     template <class InputIt>
     _GLIBCXX14_CONSTEXPR basic_static_string(InputIt first, InputIt last);
 
@@ -381,15 +380,13 @@ public:
     /// @param str String pointer
     /// @param count Elements count
     /// @exception `std::logic_error` if the pointer is equal to nullptr.
-    ///
-    /// `std::out_of_range` if `count` is more than `N`.
+    /// @exception `std::out_of_range` if `count` is more than `N`.
     _GLIBCXX14_CONSTEXPR basic_static_string(const CharT* str, size_type count);
 
     /// @brief Equivalent to `basic_static_string(str, std::strlen(str))`
     /// @param str String pointer
     /// @exception `std::logic_error` if the argument is equal to nullptr.
-    ///
-    /// `std::out_of_range` if `strlen(str)` is more than `N`.
+    /// @exception `std::out_of_range` if `strlen(str)` is more than `N`.
     template <
         typename pointer_type,
         typename = ash::enable_if_t<
@@ -409,8 +406,7 @@ public:
     /// @param str Any object that has `::value_type` and `being()` and `end()` iterators.
     /// @exception `static_assert` error if `StringViewLike::value_type` is not implicitly
     /// convertible to `CharT`.
-    ///
-    /// `std::out_of_range` if `str.end() - str.begin()` is more than `N`.
+    /// @exception `std::out_of_range` if `str.end() - str.begin()` is more than `N`.
     /// @note This constructor won't participate in overload resolution if `StringViewLike`
     /// is a pointer type.
     template <
@@ -429,10 +425,8 @@ public:
     /// @param count The number of elements to copy.
     /// @exception `static_assert` error if `StringViewLike::value_type` is not implicitly
     /// convertible to `CharT`.
-    ///
-    /// `std::out_of_range` if `count` is more than `N`.
-    ///
-    /// `std::out_of_range` if `pos + count - 1` is out of range according to `len = str.end() - str.begin()`.
+    /// @exception `std::out_of_range` if `count` is more than `N`.
+    /// @exception `std::out_of_range` if `pos + count - 1` is out of range according to `len = str.end() - str.begin()`.
     template <class StringViewLike>
     _GLIBCXX14_CONSTEXPR basic_static_string(const StringViewLike& str, size_type pos, size_type count);
 
@@ -454,8 +448,7 @@ public:
     /// @param other Other `basic_static_string` object.
     /// @exception `std::out_of_range` if `other.size()` is more than `N`.
     /// @note When the move finishes, `other` is in a valid state (`other.size() == 0`).
-    ///
-    /// `other.capacity()` can be more or less then `N`, it doesn't matter. Only `other.size()`
+    /// @note `other.capacity()` can be more or less then `N`, it doesn't matter. Only `other.size()`
     /// should fit into `N`.
     template <std::size_t other_N>
     _GLIBCXX14_CONSTEXPR basic_static_string(other_t<other_N>&& other);
@@ -476,8 +469,7 @@ public:
     /// @param other Other `basic_static_string` object.
     /// @param pos Starting index.
     /// @exception `std::out_of_range` if `pos` is equal or more than `other.size()`.
-    ///
-    /// `std::out_of_range` if `other.size() - pos` is more than `N`.
+    /// @exception `std::out_of_range` if `other.size() - pos` is more than `N`.
     template <std::size_t other_N>
     _GLIBCXX14_CONSTEXPR basic_static_string(const other_t<other_N>& other, size_type pos);
 
@@ -485,8 +477,7 @@ public:
     /// @param other Other `basic_static_string` object.
     /// @param pos Starting index.
     /// @exception `std::out_of_range` if `pos` is equal or more than `other.size()`.
-    ///
-    /// `std::out_of_range` if `other.size() - pos` is more than `N`.
+    /// @exception `std::out_of_range` if `other.size() - pos` is more than `N`.
     /// @note When the move finishes, `other` is in a valid state (`other.size() == 0`).
     /// @note The complexity is *linear* in the size of the string.
     template <std::size_t other_N>
@@ -498,8 +489,7 @@ public:
     /// @param pos Starting index.
     /// @param count The number of elements to copy.
     /// @exception `std::out_of_range` if `pos + count - 1` is equal or more than `other.size()`.
-    ///
-    /// `std::out_of_range` if `count` is more than `N`.
+    /// @exception `std::out_of_range` if `count` is more than `N`.
     template <std::size_t other_N>
     _GLIBCXX14_CONSTEXPR basic_static_string(const other_t<other_N>& other, size_type pos, size_type count);
 
@@ -509,8 +499,7 @@ public:
     /// @param pos Starting index.
     /// @param count The number of elements to move.
     /// @exception `std::out_of_range` if `pos` is equal or more than `other.size()`.
-    ///
-    /// `std::out_of_range` if `count` is more than `N`.
+    /// @exception `std::out_of_range` if `count` is more than `N`.
     /// @note When the move finishes, `other` is in a valid state (`other.size() == 0`).
     /// @note The complexity is *linear* in the size of the string.
     template <std::size_t other_N>
