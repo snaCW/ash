@@ -115,6 +115,10 @@ constexpr char ash::to_upper(char c) noexcept {
 }
 
 namespace ash {
+    /// @brief This is exactly `std::strlen` but `constexpr` in C++14 and later.
+    /// @param str Any pointer.
+    /// @return Size of the string.
+    /// @note If the pointer does not finish in a null terminator, the behavior is undefined.
     template <typename CharT>
     _GLIBCXX14_CONSTEXPR std::size_t strlen(CharT* str) noexcept {
     constexpr CharT null = static_cast<CharT>('\0');
@@ -313,11 +317,8 @@ public:
 
 #endif // __cplusplus >= __cpp17
 
-    using char_traits = std::char_traits<CharT>;
-
-    template <size_type M>
-    using c_array_t = CharT[M];
-
+    /// @brief Alias to avoid boilder-plate.
+    /// @tparam M The capacity.
     template <size_type M>
     using other_t = basic_static_string<CharT, M>;
 
