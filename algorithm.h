@@ -132,14 +132,14 @@ _GLIBCXX14_CONSTEXPR void ash::forward_value_to_iterator(T&& value, InputIt it) 
     }
 
     if_constexpr (std::is_copy_assignable<elem_t>::value) {
-        *it = std::forward(value); // `elem_t` is not move assignable, so forward will copy safely
+        *it = std::forward<elem_t>(value); // `elem_t` is not move assignable, so forward will copy safely
         return;
     }
 
     if (!__builtin_is_constant_evaluated()) {
         if_constexpr (std::is_copy_constructible<elem_t>::value) {
             (*it).~elem_t();
-            new (std::addressof(*it)) elem_t(std::forward(value));
+            new (std::addressof(*it)) elem_t(std::forward<elem_t>(value));
             return;
         }
     }
