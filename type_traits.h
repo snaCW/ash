@@ -374,6 +374,10 @@ namespace ash {
         static_assert(std::__is_complete_or_unbounded(std::__type_identity<T>{}),
 	    "template argument must be a complete class or an unbounded array");
     };
+
+// Define `void_t`
+    template <typename ...>
+    using void_t = void;
 }
 
 // Value helpers.
@@ -569,6 +573,21 @@ namespace ash {
 
     template <>
     struct is_char_type<char32_t> : std::true_type {};
+
+// Define `is_string_view_like`
+
+    template <typename, typename = void>
+    struct is_string_view_like : std::false_type {};
+
+    template <typename T>
+    struct is_string_view_like<
+        T,
+        ash::void_t<
+            typename ash::remove_cvref_t<T>::value_type,
+            decltype(std::declval<T>().begin()),
+            decltype(std::declval<T>().end())
+        >
+    > : std::true_type {};
 }
 
 #endif
